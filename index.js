@@ -7,14 +7,48 @@ app.use(cors());
 
 let ipoData = [];
 
-// Function to fetch IPO data from NSE
+// Function to fetch IPO data using ScraperAPI
 async function fetchNSE() {
   try {
-    console.log("Fetching IPO data from NSE...");
+    console.log("Fetching IPO data from NSE via ScraperAPI...");
 
     const res = await axios.get(
-      "https://www.nseindia.com/api/ipo-current-issues",
+      `http://api.scraperapi.com`,
       {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.
+        params: {
+          api_key: "1d2578e68e15dcd3048637e178fffa2a", // your key
+          url: "https://www.nseindia.com/api/ipo-current-issues"
+        }
+      }
+    );
+
+    if (res.data) {
+      ipoData = res.data;
+      console.log("IPO data updated:", ipoData.length || "some", "items");
+    }
+  } catch (err) {
+    console.error("Error fetching IPO data:", err.message);
+  }
+}
+
+// API endpoint
+app.get("/ipos", (req, res) => {
+  res.json(ipoData);
+});
+
+// Home route
+app.get("/", (req, res) => {
+  res.send("<h2>IPO App Running ✅</h2><p>Visit <a href='/ipos'>/ipos</a> for IPO data</p>");
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// Fetch once at startup
+fetchNSE();
+
+// Refresh every 1 hour
+setInterval(fetchNSE, 1000 * 60 * 60);
