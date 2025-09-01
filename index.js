@@ -18,8 +18,16 @@ db.serialize(() => {
 // ================== Fetch IPOs from Chittorgarh ==================
 async function fetchChittorgarh() {
   try {
-    const res = await axios.get("https://www.chittorgarh.com/newportal/ipo/ipo.json");
+    const res = await axios.get("https://www.chittorgarh.com/newportal/ipo/ipo.json", {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+        Accept: "application/json",
+      },
+    });
+
     const ipos = res.data || [];
+    console.log("Fetched IPOs:", ipos.length);
 
     // Clear existing IPOs
     db.run("DELETE FROM ipos");
@@ -35,8 +43,6 @@ async function fetchChittorgarh() {
         );
       });
     });
-
-    console.log("Chittorgarh IPOs updated:", ipos.length);
   } catch (e) {
     console.error("Error fetching Chittorgarh:", e.message);
   }
@@ -44,4 +50,23 @@ async function fetchChittorgarh() {
 
 // ================== API Endpoint ==================
 app.get("/ipos", (req, res) => {
-  db.all("SELECT * FROM ipos*
+  db.all("SELECT * FROM ipos", [], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+// ================== Test Endpoint ==================
+app.get("/", (req, res) => {
+  res.send("IPO API is running. Visit /ipos to see data.");
+});
+
+// ================== Start Server ==================
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  fetchChittorgarh(); // run immediately
+  setInterval(fetchChittorgarh, 1000 * 60 * 60); // run every 1 hour
+});
